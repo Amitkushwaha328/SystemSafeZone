@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeZone AI | Edge Detection Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Header Styling --- */
+        .header {
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 { margin: 0; font-weight: 800; letter-spacing: 1px; }
+        .header span { color: var(--accent-blue); }
+        .header p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* --- Main Dashboard Container --- */
+        .dashboard {
+            margin-top: 40px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 90%;
+            max-width: 700px;
+        }
+
+        /* --- Dynamic Status Banner --- */
+        #status-banner { 
+            padding: 15px 20px; 
+            font-size: 20px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        /* CSS Animations for the Scanner */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        .scanning { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); border: 2px solid var(--warning); animation: pulse 1.5s infinite; }
+        .granted { background-color: rgba(16, 185, 129, 0.2); color: var(--success); border: 2px solid var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        .denied { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); border: 2px solid var(--danger); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+
+        /* --- Camera Feed Styling --- */
+        #camera-container { 
+            margin: 0 auto; 
+            width: 100%; 
+            max-width: 640px; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            background: #000; 
+            border: 4px solid #334155;
+            position: relative;
+        }
+        video { width: 100%; display: block; transform: scaleX(-1); /* Mirrors the camera like a real mirror */ }
+        
+        #details { margin-top: 15px; font-size: 16px; color: var(--text-muted); font-weight: 600;}
+
+        /* --- Professional Footer --- */
+        .footer {
+            margin-top: auto;
+            padding: 30px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .footer strong { color: var(--text-main); font-size: 1rem; }
+        .highlight { color: var(--accent-blue); font-weight: 600; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🛡️ Safe<span>Zone</span> OS</h1>
+        <p>Live AI Edge Computer Vision Portal</p>
+    </div>
+
+    <div class="dashboard">
+        <div id="status-banner" class="scanning">
+            <span id="status-icon">⚙️</span> <span id="status-text">Initializing AI...</span>
+        </div>
+        
+        <div id="camera-container">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+        
+        <div id="details">Connecting to local edge camera...</div>
+    </div>
+
+    <canvas id="snapshot" width="640" height="480" style="display:none;"></canvas>
+
+    <div class="footer">
+        <div>Engineered with AI by <strong>Amit Kushwaha</strong></div>
+        <div>B.Tech AIML <span class="highlight">|</span> Silver Oak University</div>
+        <div style="margin-top: 5px; font-size: 0.75rem; opacity: 0.7;">Powered by YOLOv8 Edge Inference & Microsoft Azure</div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('snapshot');
+        const context = canvas.getContext('2d');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+        const statusIcon = document.getElementById('status-icon');
+        const detailsText = document.getElementById('details');
+
+        // Turn on the user's webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                statusBanner.className = "scanning";
+                statusIcon.innerText = "🔍";
+                statusText.innerText = "SCANNING ENVIRONMENT...";
+                detailsText.innerText = "Processing frames via Neural Network...";
+                
+                setInterval(sendFrameToAI, 1500); 
+            })
+            .catch(err => {
+                console.error("Camera error:", err);
+                statusBanner.className = "denied";
+                statusIcon.innerText = "⚠️";
+                statusText.innerText = "CAMERA OFFLINE";
+                detailsText.innerText = "Please allow camera permissions in your browser.";
+            });
+
+        // Capture a frame and send it to the Python Backend
+        async function sendFrameToAI() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            try {
+                const response = await fetch('/verify_access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const result = await response.json();
+                
+                // Update the UI with glowing elements based on AI response
+                if (result.status === "GRANTED") {
+                    statusBanner.className = "granted";
+                    statusIcon.innerText = "✅";
+                    statusText.innerText = "ACCESS GRANTED";
+                    detailsText.innerText = "Security check passed. PPE Confirmed.";
+                } else if (result.status === "DENIED") {
+                    statusBanner.className = "denied";
+                    statusIcon.innerText = "🚨";
+                    statusText.innerText = "ACCESS DENIED";
+                    detailsText.innerHTML = "<span style='color: #ef4444;'>PPE Violation Detected:</span> Helmet is missing.";
+                } else {
+                    statusBanner.className = "scanning";
+                    statusIcon.innerText = "🔍";
+                    statusText.innerText = "SCANNING...";
+                    detailsText.innerText = "Waiting for subject to enter frame...";
+                }
+
+            } catch (error) {
+                console.error('API Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
